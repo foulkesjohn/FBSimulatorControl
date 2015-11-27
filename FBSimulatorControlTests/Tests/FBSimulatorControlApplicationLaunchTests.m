@@ -71,23 +71,19 @@
 
 - (void)testLaunchesSampleApplicationWithTestInjection
 {
-  NSError *error = nil;
-  FBSimulatorSession *session = [self.control createSessionForSimulatorConfiguration:FBSimulatorConfiguration.iPhone5 error:&error];
-
+  FBSimulatorSession *session = [self createSession];
+  
   FBApplicationLaunchConfiguration *appLaunch = [[FBApplicationLaunchConfiguration
-    configurationWithApplication:[FBSimulatorControlFixtures tableSearchApplicationWithError:nil]
-    arguments:@[]
-    environment:@{}]
-    withXCTestBundle:[FBSimulatorControlFixtures tableSearchXCTestPath] error:nil];
-
-  BOOL success = [[[[session.interact
-    bootSimulator]
-    installApplication:appLaunch.application]
-    launchApplication:appLaunch]
-    performInteractionWithError:&error];
-
-  XCTAssertTrue(success);
-  XCTAssertNil(error);
+                                                 configurationWithApplication:[FBSimulatorControlFixtures tableSearchApplicationWithError:nil]
+                                                 arguments:@[]
+                                                 environment:@{}]
+                                                 withXCTestBundle:[FBSimulatorControlFixtures tableSearchXCTestPath] error:nil];
+  
+  [self.assert interactionSuccessful:[[[session.interact
+                                        bootSimulator]
+                                       installApplication:appLaunch.application]
+                                      launchApplication:appLaunch]];
+  
   [self.assert consumeNotification:FBSimulatorSessionDidStartNotification];
   [self.assert consumeNotification:FBSimulatorSessionSimulatorProcessDidLaunchNotification];
   [self.assert consumeNotification:FBSimulatorSessionApplicationProcessDidLaunchNotification];

@@ -14,6 +14,7 @@
 #import "FBSimulatorApplication.h"
 #import "FBSimulatorControlStaticConfiguration.h"
 #import "FBSimulatorError.h"
+#import "XCTestConfigurationHelper.h"
 
 @implementation FBProcessLaunchConfiguration (Helpers)
 
@@ -67,14 +68,24 @@
   NSString *ideBundleInjectionPath = [FBSimulatorControlStaticConfiguration.developerDirectory
     stringByAppendingPathComponent:@"Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/IDEBundleInjection.framework"];
 
+  NSString *frameworksPath = [FBSimulatorControlStaticConfiguration.developerDirectory
+                              stringByAppendingPathComponent:@"Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks"];
+  
   if (![NSFileManager.defaultManager fileExistsAtPath:ideBundleInjectionPath]) {
     return [[FBSimulatorError describeFormat:@"IDEBundleInjection.framework does not exist at path %@", ideBundleInjectionPath] fail:error];
   }
 
+  NSString *config = [[XCTestConfigurationHelper new] testEnvironmentWithSpecifiedTestConfigurationForBundlePath:xcTestBundlePath];
+  
   NSDictionary *xcTestEnvironment = @{
+    @"NSUnbufferedIO": @YES,
     @"XCInjectBundle" : xcTestBundlePath,
     @"XCInjectBundleInto" : self.application.binary.path,
-    @"DYLD_INSERT_LIBRARIES" :  ideBundleInjectionPath
+    @"DYLD_INSERT_LIBRARIES" :  ideBundleInjectionPath,
+    @"TestBundleLocation": xcTestBundlePath,
+    @"DYLD_LIBRARY_PATH": frameworksPath,
+    @"DYLD_FRAMEWORK_PATH": frameworksPath,
+    @"XCTestConfigurationFilePath": config,
   };
 
   FBApplicationLaunchConfiguration *configuration = [self copy];
@@ -82,7 +93,10 @@
   NSMutableDictionary *environment = [[self environment] mutableCopy];
   [environment addEntriesFromDictionary:xcTestEnvironment];
   configuration.environment = [environment copy];
-  configuration.arguments = @[@"-XCTest", @"All", ideBundleInjectionPath];
+  configuration.arguments = @[@"-NSTreatUnknownArgumentsAsOpen",
+                               @"NO",
+                               @"-ApplePersistenceIgnoreState",
+                               @"YES"]; //@[@"-XCTest", @"All", ideBundleInjectionPath];
   return configuration;
 }
 
